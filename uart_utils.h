@@ -17,6 +17,7 @@
 #define GHOST_ESP_APP_FOLDER_WARDRIVE "/ext/apps_data/ghost_esp/wardrive"
 #define GHOST_ESP_APP_FOLDER_LOGS     "/ext/apps_data/ghost_esp/logs"
 #define GHOST_ESP_APP_SETTINGS_FILE   "/ext/apps_data/ghost_esp/settings.ini"
+#define ESP_CHECK_TIMEOUT_MS 100
 
 typedef enum {
     WorkerEvtStop = (1 << 0),
@@ -54,5 +55,5 @@ void uart_receive_data(
     const char* prefix,
     const char* extension,
     const char* TargetFolder);
-
+bool uart_is_esp_connected(UartContext* uart);
 #endif // UART_UTILS_H
