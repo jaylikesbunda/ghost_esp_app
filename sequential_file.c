@@ -1,5 +1,6 @@
 #include "sequential_file.h"
 
+
 char* sequential_file_resolve_path(
     Storage* storage,
     const char* dir,

@@ -8,8 +8,9 @@
 #include <gui/modules/variable_item_list.h>
 #include "app_state.h"
 
+
 // Function declarations
-void send_uart_command(const char* command, AppState* state);
+void send_uart_command(const char* command, void* state);  // Changed from AppState* to void*
 void send_uart_command_with_text(const char* command, char* text, AppState* state);
 void send_uart_command_with_bytes(
     const char* command,

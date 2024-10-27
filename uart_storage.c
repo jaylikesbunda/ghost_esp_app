@@ -1,9 +1,11 @@
 #include "uart_utils.h"
+#include "log_manager.h"
 #include <furi.h>
 #include <stdlib.h>
 #include <string.h>
 #include <storage/storage.h>
 #include "sequential_file.h"
+
 
 #define COMMAND_BUFFER_SIZE 128
 
@@ -33,7 +35,11 @@ UartStorageContext *uart_storage_init(UartContext *parentContext) {
     storage_simply_mkdir(ctx->storage_api, GHOST_ESP_APP_FOLDER_WARDRIVE);
     storage_simply_mkdir(ctx->storage_api, GHOST_ESP_APP_FOLDER_PCAPS);
 
-    // Open log file
+    // Get latest log path (just to know about it, not to append)
+    char latest_log_path[256];
+    get_latest_log_file(ctx->storage_api, GHOST_ESP_APP_FOLDER_LOGS, "ghost_logs", latest_log_path);
+    
+    // Always create new file
     sequential_file_open(
         ctx->storage_api,
         ctx->log_file,
@@ -43,7 +49,21 @@ UartStorageContext *uart_storage_init(UartContext *parentContext) {
 
     return ctx;
 }
+void uart_storage_reset_logs(UartStorageContext *ctx) {
+    if(ctx->log_file) {
+        storage_file_close(ctx->log_file);
+        storage_file_free(ctx->log_file);
+        ctx->log_file = storage_file_alloc(ctx->storage_api);
+    }
 
+    // Create new log file
+    sequential_file_open(
+        ctx->storage_api,
+        ctx->log_file,
+        GHOST_ESP_APP_FOLDER_LOGS,
+        "ghost_logs",
+        "txt");
+}
 void uart_storage_free(UartStorageContext *ctx) {
     if(!ctx) return;
 

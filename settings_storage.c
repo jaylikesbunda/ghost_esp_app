@@ -1,6 +1,6 @@
-// settings_storage.c
 #include "settings_storage.h"
 #include <furi.h> // for logging
+
 
 static Storage* storage = NULL;
 

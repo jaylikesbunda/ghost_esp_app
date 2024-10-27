@@ -1,4 +1,3 @@
-// settings_storage.h
 #pragma once
 #include "settings_def.h"
 #include <furi.h>

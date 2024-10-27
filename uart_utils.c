@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "sequential_file.h"
-#include "gui/modules/text_box.h"
+#include <gui/modules/text_box.h>
+
 
 #define WORKER_ALL_RX_EVENTS (WorkerEvtStop | WorkerEvtRxDone | WorkerEvtPcapDone)
 

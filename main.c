@@ -1,32 +1,27 @@
-// main.c
-#include "menu.h"
-#include <stdlib.h>
-#include <string.h>
-#include "uart_utils.h"
-#include "settings_storage.h"
-#include "settings_def.h"
-#include "app_state.h"
-#include "callbacks.h"
 #include <furi.h>
 #include <furi_hal.h>
+#include <furi_hal_power.h>
 #include <gui/gui.h>
 #include <gui/view_dispatcher.h>
 #include <gui/modules/submenu.h>
 #include <gui/modules/text_box.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/text_input.h>
+#include <storage/storage.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 
-// Helper function to set up a settings item with current value
-static void setup_settings_item(
-    VariableItem* item, 
-    const SettingMetadata* metadata,
-    uint8_t current_value) {
-    
-    variable_item_set_current_value_index(item, current_value);
-    variable_item_set_current_value_text(item, metadata->value_names[current_value]);
-}
+#include "menu.h"
+#include "uart_utils.h"
+#include "settings_storage.h"
+#include "settings_def.h"
+#include "app_state.h"
+#include "callbacks.h"
+#include "confirmation_view.h"
+#include "utils.h"
+
 
 int32_t ghost_esp_app(void* p) {
     UNUSED(p);
@@ -39,8 +34,19 @@ int32_t ghost_esp_app(void* p) {
     }
     furi_delay_ms(200);
 
+
     // Set up UI
     AppState* state = malloc(sizeof(AppState));
+    memset(state, 0, sizeof(AppState));  // Zero all memory first
+
+    // Initialize text buffers
+    state->textBoxBuffer = malloc(1);
+    state->textBoxBuffer[0] = '\0';
+    state->buffer_length = 0;
+    state->input_buffer = malloc(32);
+    memset(state->input_buffer, 0, 32);
+
+    // Initialize UI components
     state->view_dispatcher = view_dispatcher_alloc();
     state->main_menu = main_menu_alloc();
     state->wifi_menu = submenu_alloc();
@@ -49,109 +55,69 @@ int32_t ghost_esp_app(void* p) {
     state->text_box = text_box_alloc();
     state->settings_menu = variable_item_list_alloc();
     state->text_input = text_input_alloc();
-    state->input_buffer = malloc(32);
+    state->confirmation_view = confirmation_view_alloc();
 
+    // Set headers after allocation
     main_menu_set_header(state->main_menu, "Select a Utility");
     submenu_set_header(state->wifi_menu, "Select a Wifi Utility");
     submenu_set_header(state->ble_menu, "Select a Bluetooth Utility");
     submenu_set_header(state->gps_menu, "Select a GPS Utility");
     text_input_set_header_text(state->text_input, "Enter Your Text");
 
-    // Initialize UART
-    state->uart_context = uart_init(state);
-
-    // Initialize settings menu items
-    VariableItem* settings_items[SETTINGS_COUNT];
-    Settings settings;
+    // Initialize storage and load settings before UART
     settings_storage_init();
-    
-    // Load settings using settings_storage_load
-    if(settings_storage_load(&settings, GHOST_ESP_APP_SETTINGS_FILE) != SETTINGS_OK) {
-        // Initialize default settings
-        memset(&settings, 0, sizeof(Settings));
-        settings.stop_on_back_index = 1;  // Default value
-
-        // Save default settings
-        settings_storage_save(&settings, GHOST_ESP_APP_SETTINGS_FILE);
+    if(settings_storage_load(&state->settings, GHOST_ESP_APP_SETTINGS_FILE) != SETTINGS_OK) {
+        memset(&state->settings, 0, sizeof(Settings));
+        state->settings.stop_on_back_index = 1;
+        settings_storage_save(&state->settings, GHOST_ESP_APP_SETTINGS_FILE);
     }
 
+    // Set up settings UI context
+    state->settings_ui_context.settings = &state->settings;
+    state->settings_ui_context.send_uart_command = send_uart_command;
+    state->settings_ui_context.switch_to_view = NULL;
+    state->settings_ui_context.show_confirmation_view = show_confirmation_view_wrapper;
+    state->settings_ui_context.context = state;
 
     // Initialize settings menu
-    for(SettingKey key = 0; key < SETTINGS_COUNT; key++) {
-        const SettingMetadata* metadata = settings_get_metadata(key);
-        VariableItemChangeCallback callback = NULL;
-        
-        // Select the appropriate callback based on setting type
-        switch(key) {
-            case SETTING_RGB_MODE:
-                callback = on_rgb_mode_changed;
-                break;
-            case SETTING_CHANNEL_HOP_DELAY:
-                callback = on_channelswitchdelay_changed;
-                break;
-            case SETTING_ENABLE_CHANNEL_HOPPING:
-                callback = on_togglechannelhopping_changed;
-                break;
-            case SETTING_ENABLE_RANDOM_BLE_MAC:
-                callback = on_ble_mac_changed;
-                break;
-            case SETTING_STOP_ON_BACK:
-                callback = on_stop_on_back_changed;
-                break;
-            case SETTING_REBOOT_ESP:
-                callback = on_reboot_esp_changed;
-                break;
-            default:
-                continue;  // Skip unknown settings
-        }
-        
-        if(callback) {
-            settings_items[key] = variable_item_list_add(
-                state->settings_menu,
-                metadata->name,
-                metadata->max_value + 1,
-                callback,
-                state
-            );
+    settings_setup_gui(state->settings_menu, &state->settings_ui_context);
 
-            // Set up the settings item with current value
-            uint8_t current_value = *((uint8_t*)&settings + key);
-            setup_settings_item(settings_items[key], metadata, current_value);
-        }
-    }
+    // Initialize UART after settings are ready
+    state->uart_context = uart_init(state);
 
     // Add views
     view_dispatcher_add_view(state->view_dispatcher, 0, main_menu_get_view(state->main_menu));
     view_dispatcher_add_view(state->view_dispatcher, 1, submenu_get_view(state->wifi_menu));
     view_dispatcher_add_view(state->view_dispatcher, 2, submenu_get_view(state->ble_menu));
     view_dispatcher_add_view(state->view_dispatcher, 3, submenu_get_view(state->gps_menu));
-    view_dispatcher_add_view(
-        state->view_dispatcher, 4, variable_item_list_get_view(state->settings_menu));
+    view_dispatcher_add_view(state->view_dispatcher, 4, variable_item_list_get_view(state->settings_menu));
     view_dispatcher_add_view(state->view_dispatcher, 5, text_box_get_view(state->text_box));
     view_dispatcher_add_view(state->view_dispatcher, 6, text_input_get_view(state->text_input));
+    view_dispatcher_add_view(state->view_dispatcher, 7, confirmation_view_get_view(state->confirmation_view));
 
-    // Show the main menu
+    // Show main menu
     show_main_menu(state);
 
-    // Open GUI
-    Gui* gui = furi_record_open(RECORD_GUI);
+    // Set up GUI
+    Gui* gui = furi_record_open("gui");
     view_dispatcher_attach_to_gui(state->view_dispatcher, gui, ViewDispatcherTypeFullscreen);
-
     view_dispatcher_set_navigation_event_callback(state->view_dispatcher, back_event_callback);
     view_dispatcher_set_event_callback_context(state->view_dispatcher, state);
-
     view_dispatcher_run(state->view_dispatcher);
-
-    furi_record_close(RECORD_GUI);
+    furi_record_close("gui");
 
     // Cleanup views
-    for(int i = 0; i <= 6; i++) {
-        view_dispatcher_remove_view(state->view_dispatcher, i);
+    {
+        size_t i;
+        for(i = 0; i <= 7; i++) {
+            view_dispatcher_remove_view(state->view_dispatcher, i);
+        }
     }
 
+    // Cleanup UART
     uart_free(state->uart_context);
 
-    // Clean up
+    // Cleanup UI components
     text_input_free(state->text_input);
     text_box_free(state->text_box);
     main_menu_free(state->main_menu);
@@ -160,10 +126,14 @@ int32_t ghost_esp_app(void* p) {
     submenu_free(state->ble_menu);
     submenu_free(state->gps_menu);
     view_dispatcher_free(state->view_dispatcher);
+    confirmation_view_free(state->confirmation_view);
+
+    // Cleanup buffers
     free(state->input_buffer);
+    free(state->textBoxBuffer);
     free(state);
 
-    // Have to put at bottom otherwise nullptr dereference
+    // Handle OTG state
     if(furi_hal_power_is_otg_enabled() && !otg_was_enabled) {
         furi_hal_power_disable_otg();
     }

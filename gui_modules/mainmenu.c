@@ -245,8 +245,8 @@ static void main_menu_view_draw_callback(Canvas* canvas, void* _model) {
             switch(position) {
                 case 0: icon = &I_Wifi_icon; break;
                 case 1: icon = &I_BLE_icon; break;
-                case 2: icon = &I_GPS; break;
-                case 3: icon = &I_Cog; break;
+                // case 2: icon = &I_GPS; break;
+                case 2: icon = &I_Cog; break;
             }
         }
         

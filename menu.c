@@ -5,6 +5,7 @@
 #include "settings_storage.h"
 #include "settings_def.h"
 
+
 // Menu command configuration structure
 typedef struct {
     const char* label;      // Display label in menu 
@@ -61,7 +62,8 @@ static const MenuCommand wifi_commands[] = {
 // BLE menu command definitions
 static const MenuCommand ble_commands[] = {
     {"Find the Flippers", "blescan -f\n", NULL, NULL, NULL, false, NULL},
-    {"BLE Spam Detector", "blescan -ds\n", NULL, NULL, NULL, false, NULL},
+    // TEMP REMOVE 
+    // {"BLE Spam Detector", "blescan -ds\n", NULL, NULL, NULL, false, NULL},
     {"AirTag Scanner", "blescan -a\n", NULL, NULL, NULL, false, NULL},
     {"Sniff Bluetooth", "blescan -r\n", "btscan", "pcap", GHOST_ESP_APP_FOLDER_PCAPS, false, NULL},
     {"Stop BLE Scan", "blescan -s\n", NULL, NULL, NULL, false, NULL},
@@ -73,9 +75,9 @@ static const MenuCommand gps_commands[] = {
     {"WarDrive", "wardrive", "wardrive_scan", "csv", GHOST_ESP_APP_FOLDER_WARDRIVE, false, NULL},
 };
 
-// Helper function to send commands
-void send_uart_command(const char* command, AppState* state) {
-    uart_send(state->uart_context, (uint8_t*)command, strlen(command));
+void send_uart_command(const char* command, void* state) {
+    AppState* app_state = (AppState*)state;
+    uart_send(app_state->uart_context, (uint8_t*)command, strlen(command));
 }
 
 void send_uart_command_with_text(const char* command, char* text, AppState* state) {
@@ -276,7 +278,8 @@ void show_main_menu(AppState* state) {
     main_menu_set_header(state->main_menu, "Select a Utility:");
     main_menu_add_item(state->main_menu, "WiFi", 0, submenu_callback, state);
     main_menu_add_item(state->main_menu, "BLE", 1, submenu_callback, state);
-    main_menu_add_item(state->main_menu, "GPS", 2, submenu_callback, state);
+    // GPS temporarily hidden
+    // main_menu_add_item(state->main_menu, "GPS", 2, submenu_callback, state);
     main_menu_add_item(state->main_menu, "CONF", 3, submenu_callback, state);
     view_dispatcher_switch_to_view(state->view_dispatcher, 0);
     state->current_view = 0;

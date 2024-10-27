@@ -8,19 +8,11 @@
 #include <gui/modules/text_input.h>
 #include "gui_modules/mainmenu.h"
 #include "settings_def.h"
+#include "app_types.h"
+#include "settings_ui_types.h"
 
-// Forward declare the uart types
-typedef struct UartContext UartContext;
 
-// Settings UI Context
-typedef struct {
-    Settings* settings;
-    void (*send_uart_command)(const char* command, void* context);
-    void* context;
-} SettingsUIContext;
-
-// Application State
-typedef struct {
+struct AppState {
     // Views
     ViewDispatcher* view_dispatcher;
     MainMenu* main_menu;
@@ -30,6 +22,7 @@ typedef struct {
     VariableItemList* settings_menu;
     TextBox* text_box;
     TextInput* text_input;
+    ConfirmationView* confirmation_view;  // Add this
 
     // UART Context
     UartContext* uart_context;
@@ -45,4 +38,4 @@ typedef struct {
     const char* uart_command;
     char* textBoxBuffer;
     size_t buffer_length;
-} AppState;
+};

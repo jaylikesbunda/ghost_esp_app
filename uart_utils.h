@@ -11,6 +11,9 @@
 #include "menu.h"
 #include "uart_storage.h"
 
+#endif
+
+
 #define RX_BUF_SIZE                   256
 #define GHOST_ESP_APP_FOLDER          "/ext/apps_data/ghost_esp"
 #define GHOST_ESP_APP_FOLDER_PCAPS    "/ext/apps_data/ghost_esp/pcaps"
@@ -56,4 +59,4 @@ void uart_receive_data(
     const char* extension,
     const char* TargetFolder);
 bool uart_is_esp_connected(UartContext* uart);
-#endif // UART_UTILS_H
+void uart_storage_reset_logs(UartStorageContext *ctx);
