@@ -35,7 +35,7 @@ A Flipper Zero application for interfacing with the [Ghost ESP32 Firmware]([http
 - **NVS Clearing**: Clear NVS data with a confirmation prompt
 
 ## Downloads
-- **Prebuilt App:** [Download from Releases](https://github.com/Spooks4576/ghost_esp_app/releases)
+- **Prebuilt App:** [Download](https://cdn.spookytools.com/assets/ghost_esp.fap)
 - **Firmware:** [Ghost ESP32 Firmware Repository](https://github.com/Spooks4576/Ghost_ESP)
 
 ## Credits 🙏
