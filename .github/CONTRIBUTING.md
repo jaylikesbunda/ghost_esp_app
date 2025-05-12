@@ -48,7 +48,8 @@ Once you have access to your SD card file system drag and drop your shiney new `
 ## Final steps:
 Before submitting your PR be sure to verify the following:
 1. Have you incremented the Changelog.md file, and tagged your changes?
-2. Have you successfully built and tested your changes?
-3. Does your contribution address an open issue in the repo? Be sure to link to it!
+2. Have you updated the version in fap_version.fam to reflect your
+3. Have you successfully built and tested your changes?
+4. Does your contribution address an open issue in the repo? Be sure to link to it!
 
 If you've done these things then go ahead and submit your PR!
