@@ -549,7 +549,7 @@ bool settings_custom_event_callback(void* context, uint32_t event_id) {
                                 "Updated by: Jay Candel\n"
                                 "Built with <3";
 
-        confirmation_view_set_header(app_state->confirmation_view, "Ghost ESP v1.3.1");
+        confirmation_view_set_header(app_state->confirmation_view, "Ghost ESP v1.4 dev");
         confirmation_view_set_text(app_state->confirmation_view, info_text);
 
         // Save current view before switching
